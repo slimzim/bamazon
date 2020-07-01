@@ -1,5 +1,6 @@
 var mysql = require("mysql")
 var inquirer = require("inquirer");
+const { prompt } = require("inquirer");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -12,10 +13,10 @@ var connection = mysql.createConnection({
 connection.connect(function(err) {
     if (err) throw err;
     console.log("Connected to as id " + connection.threadId)
-    promptManager()
+    promptUser()
 })
 
-function promptManager(){
+function promptUser(){
 
     inquirer.prompt([
         {
@@ -57,12 +58,12 @@ function viewProducts(){
             
         }
         console.log("\n")
-        promptManager();
+        promptUser();
     })
 }
 
 function lowInventory(){
-    console.log("Finding low inventory...\n")
+    console.log("Finding items with low inventory...\n")
     connection.query("SELECT * FROM products", function(err, res){
         if (err) throw err;
         // console.log(res)
@@ -74,27 +75,92 @@ function lowInventory(){
             }
         }
         console.log("\n")
-        promptManager();
+        promptUser();
     })
-
-
 }
 
 function addInventory(){
+    connection.query("SELECT * FROM products", function(err, res){
+        if (err) throw err;
+        productsArray = []
+        for (var i=0; i<res.length; i++){
+            var product = res[i]
+            productsArray.push(product.product_name)
+        }
 
+        inquirer.prompt([
+            {
+                type: "list",
+                name: "inventoryChoice",
+                message: "Which item would you like to add to?",
+                choices: productsArray
+            }
+            ,
+            {
+                type: "input",
+                name: "inventoryQuantity",
+                message: "How many would you like to add?"
+            }
+        ]).then(function(answers){
+            product = answers.inventoryChoice
+            quantity = parseInt(answers.inventoryQuantity)
+            var dataQuery = "SELECT * FROM products WHERE product_name = '" + product + "'"
+            connection.query(dataQuery, function(err,res){
+                if(err) throw err;
+                dbQuantity = parseInt(res[0].stock_quantity)
+                quantity += dbQuantity
+                var updateQuery = "UPDATE products SET stock_quantity = " + quantity + " WHERE product_name = '" + product + "'"
+                connection.query(updateQuery, function(err,res){
+                    if (err) throw err;
+                    console.log("Inventory updated successfully!")
+                    console.log("Inventory now contains " + quantity + " " + product + "(s).\n")
+                    promptUser()
+                })           
+            })
+        })
+    })
 }
 
 function newProduct(){
-
+    inquirer.prompt([
+        {
+            type: "input",
+            name: "name",
+            message: "Enter Product Name:"
+        },
+        {
+            type: "input",
+            name: "department",
+            message: "Enter Department Name:"      
+        },
+        {
+            type: "input",
+            name: "price",
+            message: "Enter Product Price:"
+        },
+        {
+            type: "input",
+            name: "quantity",
+            message: "Enter Quantity to Add:"
+        }
+    ]).then(function(response){
+        name = response.name
+        department = response.department
+        price = response.price
+        quantity = response.price
+        addQuery = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ('" + name + "', '" + department + "', " + price + ", " + quantity + ")"
+        connection.query(addQuery, function(err,res){
+            if (err) throw err;
+            console.log("Successfully added " + name + " to inventory!\n")
+            promptUser()
+        })
+    })
 }
-
-
 
 function tableHeader(){
     console.log("| ID | Product Name                             | Department Name              | Product Price | Quantity |")
     console.log("| -- | ---------------------------------------- | ---------------------------- | ------------- | -------- |")
 }
-
 
 function printRow(id, name, department, price, quantity){
     price = price.toString()
@@ -126,8 +192,6 @@ function printRow(id, name, department, price, quantity){
         quantity = quantity + " "
     }
 
-
     dispString = "| " + id + " | " + name + " | " + department + " | " + price + " | " +  quantity + " |"
     console.log(dispString)
 }
-
