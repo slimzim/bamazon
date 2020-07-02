@@ -12,7 +12,7 @@ var connection = mysql.createConnection({
 
 connection.connect(function(err) {
     if (err) throw err;
-    console.log("Connected to as id " + connection.threadId)
+    // console.log("Connected as id " + connection.threadId)
     promptUser()
 })
 
@@ -147,8 +147,8 @@ function newProduct(){
         name = response.name
         department = response.department
         price = response.price
-        quantity = response.price
-        addQuery = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ('" + name + "', '" + department + "', " + price + ", " + quantity + ")"
+        quantity = response.quantity
+        addQuery = "INSERT INTO products (product_name, department_name, price, stock_quantity, product_sales) VALUES ('" + name + "', '" + department + "', " + price + ", " + quantity + ", 0)"
         connection.query(addQuery, function(err,res){
             if (err) throw err;
             console.log("Successfully added " + name + " to inventory!\n")

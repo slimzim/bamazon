@@ -6,12 +6,13 @@ var connection = mysql.createConnection({
     port: 3306,
     user: "root",
     password: "password",
-    database: "bamazon"
+    database: "bamazon",
+    multipleStatements: true,
 });
 
 connection.connect(function(err) {
     if (err) throw err;
-    console.log("Connected to as id " + connection.threadId)
+    // console.log("Connected as id " + connection.threadId)
     readProducts();
 })
 
@@ -67,11 +68,15 @@ function placeOrder(userOrder){
         else {
             quantity -= userOrder.quantity
             spendings = userOrder.quantity * price
-            var updateQuery = "UPDATE products SET stock_quantity = " + quantity + " WHERE product_name = '" + userOrder.name + "'"
-            connection.query(updateQuery, function(err,res){
+            var updateQuantity = "UPDATE products SET stock_quantity = " + quantity + " WHERE product_name = '" + userOrder.name + "'"
+            connection.query(updateQuantity, function(err,res){
                 if(err) throw err;
                 console.log("Order completed successfully!")
                 console.log("You spent: $" + spendings)
+            })
+            var updateSales = "UPDATE products SET product_sales = product_sales + " + spendings + " WHERE product_name = '" + userOrder.name + "'"
+            connection.query(updateSales, function(err,res){
+                if(err) throw err;         
             })
         }
         connection.end()
